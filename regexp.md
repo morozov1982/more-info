@@ -2,7 +2,7 @@
 
 Сайт для проверки: [https://regex101.com/](https://regex101.com/)<br />
 Неплохой курс [регулярные выражения][1] в Python
-[1]:((https://www.youtube.com/watch?v=1SWGdyVwN3E&list=PLA0M1Bcd0w8w8gtWzf9YkfAxFCgDb09pA))
+[1]:(https://www.youtube.com/watch?v=1SWGdyVwN3E&list=PLA0M1Bcd0w8w8gtWzf9YkfAxFCgDb09pA)
 
 `.` - любой одиночный символ (кроме `\n`)
 
