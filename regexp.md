@@ -1,14 +1,21 @@
 # RegExp
 
-Сайт для проверки: [https://regex101.com/](https://regex101.com/)<br />
-Неплохой курс [регулярные выражения][1] в Python
-[1]:(https://www.youtube.com/watch?v=1SWGdyVwN3E&list=PLA0M1Bcd0w8w8gtWzf9YkfAxFCgDb09pA)
+>Сайт для проверки: [https://regex101.com/](https://regex101.com/)
+
+>Неплохой курс Python 3 [регулярные выражения](https://www.youtube.com/watch?v=1SWGdyVwN3E&list=PLA0M1Bcd0w8w8gtWzf9YkfAxFCgDb09pA)<br />
+>[Сайт курса](https://proproprogs.ru/modules/literaly-i-simvolnyy-klass)
 
 `.` - любой одиночный символ (кроме `\n`)
 
 `[]` - любой из символов, диапазон, набор символов (символы `"(", ")", ".", "?"` внутри квадратных скобок будут восприниматься как есть, кроме `\`)
 
 `()` - группирующие сохраняющие скобки
+
+`\i` - обращение к сохранению (i - натуральное число: 1, 2, 3, ...)
+
+`(?P<name>...)` - имя сохраняющей скобки (<> - нужны) (вместо ... - выражение)
+
+`(?P=name)` - обращаемся к сохраняющей скобке (<> - не нужны)
 
 `$` - конец строки
 
@@ -241,11 +248,86 @@ match_3 = re.findall(r"<img\s+[^>]*?src\s*[^>]+>", text_3)
 print(match_3)  # ["<img alt='картинка'  src='bg.jpg'>"]
 ```
 
+Ищем **определённые ключи**:
+
+``` Python3
+import re
+
+text = "lat = 5, lon=7"
+
+match = re.findall(r"lat\s*=\s*\d+|lon\s*=\s*\d+", text)
+print(match)  # ['lat = 5', 'lon=7']
 
 
+text = "pi=3, a = 5"
+
+match = re.findall(r"lat\s*=\s*\d+|lon\s*=\s*\d+", text)
+print(match)  # []
+```
+
+**Группирующие скобки** *(оптимизируем код, см. выше)*:
+
+``` Python3
+import re
+
+text = "lat = 5, lon=7, a=5"
+
+# несохраняющая группирующая скобка (?:)
+match = re.findall(r"(?:lat|lon)\s*=\s*\d+", text)
+print(match)  # ['lat = 5', 'lon=7']
 
 
+# сохраняющая группировка
+match = re.findall(r"(lat|lon)\s*=\s*\d+", text)
+print(match)  # ['lat', 'lon']  - 2-й уровень
 
+
+# сохраняющая группировка
+match = re.findall(r"((lat|lon)\s*=\s*\d+)", text)
+print(match)  # [('lat = 5', 'lat'), ('lon=7', 'lon')]  - оба уровня
+
+
+# сохраняем значения отдельно
+match = re.findall(r"(lat|lon)\s*=\s*(\d+)", text)
+print(match)  # [('lat', '5'), ('lon', '7')]
+```
+
+Достаём **путь к файлу** из тега \<img\>:
+
+``` Python3
+import re
+
+text = "<p>Картинка <img src='bg.jpg'> в тексте</p>"
+
+match = re.findall(r"<img\s+[^>]*src=[\"'](.+?)[\"']", text)
+print(match)  # ['bg.jpg']
+
+# \ в конце пути
+text = "<p>Картинка <img src='bg.jpg\'> в тексте</p>"
+
+match = re.findall(r"<img\s+[^>]*src=([\"'])(.+?)\1", text)  # \1 == ([\"']) (первые сохраняющие скобки, 1 - индекс)
+print(match)  # [("'", 'bg.jpg')]
+```
+
+**Парсим XML-файл** ([папка проекта](parse_xml)):
+
+``` Python3
+import re
+
+with open("map.xml", "r") as f:
+    lat = []
+    lon = []
+    for text in f:
+        match = re.search(r"<point\s+[^>]*?lon=([\"\'])(?P<lon>[0-9.,]+)\1\s+[^>]*lat=([\"\'])(?P<lat>[0-9.,]+)\1",
+                          text)
+        if match:
+            v = match.groupdict()
+            if "lon" in v and "lat" in v:
+                lon.append(v["lon"])
+                lat.append(v["lat"])
+
+    print(lon, lat, sep="\n")
+```
 
 
 
