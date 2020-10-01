@@ -17,9 +17,27 @@
 
 `(?P=name)` - обращаемся к сохраняющей скобке (<> - не нужны)
 
-`$` - конец строки
+`(?P<q>[\'''])` `(?(id|name)yes_pattern)` или `(?(id|name)yes_pattern|no_pattern)` - yes-pattern - шаблон, выполняемый при наличии группы; no_pattern – при отсутствии
 
-`^` - начало строки
+`$` - конец строки (с флагом `re.MULTILINE` – позиция перед символом переноса строки `\n`)
+
+`^` - начало строки (с флагом `re.MULTILINE` – начало строки)
+
+`\b` - граница слова (не ищется в строке текста, а только определяет границу слова)
+
+`\B` - не граница
+
+`\A` - начало текста
+
+`\Z` - конец текста
+
+`(?=exp)` - Проверка на совпадение с выражением exp продолжения строки. При этом позиция поиска не смещается на выражение exp (опережающая проверка) (exp - выражение или шаблон)
+
+`(?!exp)` - Проверка на несовпадение с выражением exp продолжения строки. (Также опережающая проверка)
+
+`(?<=exp)` - Проверка на совпадение с выражением exp хвоста уже обработанной (проверенной) строки. Она также называется *позитивной ретроспективной проверкой*
+
+`(?<!exp)` - Проверка на несовпадение с выражением exp хвоста уже обработанной (проверенной) строки. Еще она называется *негативной ретроспективной проверкой*
 
 `\` - экранирование
 
@@ -36,10 +54,6 @@
 `\w` - буква (любой символ слова)
 
 `\W` - всё, кроме букв (любой не символ слова)
-
-`\b` - граница слова
-
-`\B` - не граница
 
 ## Квантификация (квантификаторы)
 
@@ -66,6 +80,34 @@
 `?` или `{0,1}` - 0 или 1 раз (минорный: `??`)
 
 `^` - не (перед символами внутри [])
+
+## Флаги
+
+> можно записывать через `|`, например `re.MULTILINE|re.VERBOSE`
+
+`re.A` или `re.ASCII` - проверки \b, \B, \s, \S, \w и \W действуют так, как если бы они применялись к тексту, содержащему только символы ASCII **(по умолчанию используется Юникод** `re.U` / ``re.UNICODE` **лучше оставаться в этом режиме)**
+
+`re.I` или `re.IGNORECASE` - без учета регистра символов
+
+`re.M` или `re.MULTILINE` - влияет на проверки `^` и `$`. Начало `^` считается началом строки (сразу после символа `\n` или начало текста). Конец `$` считается в позиции перед `\n` (или конец строки)
+
+`re.S` или `re.DOTALL` - символ `.` также включает символ перевода строки `\n`.
+
+`re.X` или `re.VERBOSE` - позволяет включать в регулярные выражения пробелы и комментарии
+
+`re.DEBUG` - ключает режим отладки при компиляции регулярного выражения
+
+### Флаги внутри выражения
+
+`(?flags)` - flags - один или несколько флагов
+
+например: `re.findall(r"(?im)python", text)`
+
+`a` – то же самое, что и `re.ASCII`<br />
+`i` – соответствует `re.IGNORECASE`<br />
+`m` – для `re.MULTILINE`<br />
+`s` – для `re.DOTALL`<br />
+`x` – для `re.VERBOSE`
 
 ## Примеры
 
@@ -329,7 +371,117 @@ with open("map.xml", "r") as f:
     print(lon, lat, sep="\n")
 ```
 
+### Проверки
 
+**Слово целиком** `\b`:
+
+``` Python3
+import re
+ 
+text = "подоходный налог"
+
+match = re.findall(r"прибыль|обретение|\bдоход\b", text)
+print(match)  # []
+```
+
+**Группа** (каждое слова целиком) `\b()\b`:
+
+``` Python3
+import re
+ 
+text = "подоходный налог, доход"
+
+match = re.findall(r"\b(прибыль|обретение|доход)\b", text)
+print(match)  # ['доход'] - только "доход" целиком
+```
+
+Весь **текст между** тегами `<script></script>`:
+
+``` Python3
+import re
+
+text = """<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Уроки по Python</title>
+</head>
+<body>
+<script type="text/javascript">
+let o = document.getElementById('id_div');
+console.log(obj);
+</script>
+</body>
+</html>"""
+
+match = re.findall(r"^<script.*?>([\w\W]+)(?=</script>)", text, re.MULTILINE)
+
+print(match)  # ["\nlet o = document.getElementById('id_div');\nconsole.log(obj);\n"]
+```
+
+Опережающая проверка (*text из примера выше*):
+
+```
+match = re.findall(r"^<script.*?>([\w\W]+)(?<=</script>)", text, re.MULTILINE)
+
+print(match)  # ["\nlet o = document.getElementById('id_div');\nconsole.log(obj);\n</script>"]  - </script> в конце
+```
+
+**Ретроспективная проверка:** достаём все пары ключ="значение" (*text из примера выше*):
+
+``` Python3
+match = re.findall(r"([-\w]+)[ \t]*=[ \t]*[\"']([^\"']+)(?<![ \t])", text, re.MULTILINE)  # (?<![ \t]) - если перед кавычкой будет пробел, уберёт
+
+print(match)  # [('http-equiv', 'Content-Type'), ('content', 'text/html; charset=windows-1251'), ('name', 'viewport'), ('content', 'width=device-width, initial-scale=1.0'), ('type', 'text/javascript')]
+```
+
+**Ретроспективная проверка:** достаём все пары ключ="значение" лил ключ=значение (*text из примера выше*):
+
+``` Python3
+import re
+
+text = """<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1251">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Уроки по Python</title>
+</head>
+<body>
+<p align=center>Hello World!</p>
+</body>
+</html>"""
+
+match = re.findall(r"([-\w]+)[ \t]*=[ \t]*(?P<q>[\"'])?(?(q)([^\"']+(?<![ \t]))|([^ \t>]+))", text, re.MULTILINE)
+
+print(match)  # [('http-equiv', '"', 'Content-Type', ''), ('content', '"', 'text/html; charset=windows-1251', ''), ('name', '"', 'viewport', ''), ('content', '"', 'width=device-width, initial-scale=1.0', ''), ('align', '', '', 'center')]
+```
+
+Комментарии, пробелы `re.VERBOSE` (*text из примера выше*):
+
+```
+match = re.findall(r"""([-\w]+)             #выделяем атрибут
+                   [ \t]*=[ \t]*            #далее, должно идти равно и кавычки
+                   (?P<q>[\"'])?            #проверяем наличие кавычки
+                   (?(q)([^\"']+(?<![ \t]))|([^ \t>]+))     #выделяем значение атрибута
+                   """, 
+                   text, re.MULTILINE|re.VERBOSE)
+
+print(match)  # результат см. выше
+```
+
+**Флаги внутри выражения**:
+
+```
+import re
+
+text = "Python, python, PYTHON"
+
+match = re.findall(r"(?im)python", text)  # m - только для примера
+
+print(match)  # ['Python', 'python', 'PYTHON']
+```
 
 
 
