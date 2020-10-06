@@ -5,6 +5,8 @@
 >Неплохой курс Python 3 [регулярные выражения](https://www.youtube.com/watch?v=1SWGdyVwN3E&list=PLA0M1Bcd0w8w8gtWzf9YkfAxFCgDb09pA)<br />
 >[Сайт курса](https://proproprogs.ru/modules/literaly-i-simvolnyy-klass)
 
+>[Статья](https://habr.com/ru/post/349860/) на Хабр
+
 `.` - любой одиночный символ (кроме `\n`)
 
 `[]` - любой из символов, диапазон, набор символов (символы `"(", ")", ".", "?"` внутри квадратных скобок будут восприниматься как есть, кроме `\`)
@@ -108,6 +110,59 @@
 `m` – для `re.MULTILINE`<br />
 `s` – для `re.DOTALL`<br />
 `x` – для `re.VERBOSE`
+
+## Объект re.Match
+
+![нумерация сохраняющих групп](img/group-num.png)
+
+`match.group(n)` – сохраняющая группа (n - номер группы)
+
+`match.groups()` – все группы
+
+`match.lastindex()` – индекс последней сохраняющей группы
+
+`match.start(n)` – начальный индекс группы n в тексте
+
+`match.end(n)` – конечный индекс группы n в тексте
+
+`match.span(n)` – кортеж начальной и конечной позиции группы n в тексте
+
+`match.pos` – начальный индекс в тексте, с которого производился поиск
+
+`match.endpos` – конечная позиция в тексте, до которой производился поиск
+
+`match.re` – возвращает скомпилированный шаблон
+
+`match.string` – возвращает анализируемую строку
+
+`match.groupdict()` – возвращает словарь, который содержит имена групп и их значения<br />(например: `{'key': 'color', 'value': '#CC0000'}`)
+
+`match.lastgroup` – возвращает имя последней группы или None, если групп нет
+
+`match.expand(строка)` – формирует строку с использованием сохранённых групп
+
+Например: `match.expand(r"\g<key>:\g<value>")`, где:
+
+* `\g<name>` – обращение к группе по имени;
+* `\1, \2, …` – по номеру.
+
+## Методы re в Python 3
+
+`re.search(pattern, string, flags)` – ищет **первое вхождение**
+
+`re.finditer(pattern, string, flags)` – ищет **все вхождения**, возвращает итерируемый объект
+
+`re.findall(pattern, string, flags)` – **список** найденых вхождений
+
+`re.match(pattern, string, flags)` – ищет вхождение **с начала строки**
+
+`re.split(pattern, string, flags)` – разбивка строки по шаблону
+
+`re.sub(pattern, repl, string, count, flags)` – заменяет в строке `string` найденые совпадения строкой или функцией `repl`, `count` раз
+
+`re.subn(pattern, repl, string, count, flags)` – заменяет в строке `string` найденые совпадения строкой или функцией `repl`, `count` раз и возвращает число произведённых замен
+
+`re.compile(pattern, flags)` – компилирует регулярное выражение и возвращает его в виде экземпляра класса Pattern (для многократного использования шаблона)
 
 ## Примеры
 
@@ -436,7 +491,7 @@ match = re.findall(r"([-\w]+)[ \t]*=[ \t]*[\"']([^\"']+)(?<![ \t])", text, re.MU
 print(match)  # [('http-equiv', 'Content-Type'), ('content', 'text/html; charset=windows-1251'), ('name', 'viewport'), ('content', 'width=device-width, initial-scale=1.0'), ('type', 'text/javascript')]
 ```
 
-**Ретроспективная проверка:** достаём все пары ключ="значение" лил ключ=значение (*text из примера выше*):
+**Ретроспективная проверка:** достаём все пары ключ="значение" или ключ=значение (*text из примера выше*):
 
 ``` Python3
 import re
@@ -483,18 +538,170 @@ match = re.findall(r"(?im)python", text)  # m - только для пример
 print(match)  # ['Python', 'python', 'PYTHON']
 ```
 
-
-
-
-
-
-**Шаблон**:
+**Match.Expand()**:
 
 ``` Python3
 import re
 
-text = ""
+text = "<font color=#CC0000>"
 
-match = re.findall(r"", text)
-print(match)  # 
+match = re.search(r"(?P<key>\w+)=(?P<value>#[\da-fA-F]{6})\b", text)
+match.expand(r"\g<key>:\g<value>")  # вернёт: 'color:#CC0000'
+```
+
+**re.search()**:
+
+``` Python3
+import re
+
+text = "<font color=#CC0000 bg=#ffffff>"
+
+match = re.search(r"(?P<key>\w+)=(?P<value>#[\da-fA-F]{6})\b", text)
+match.groups()  # ('color', '#CC0000')
+```
+
+**re.finditer()**:
+
+``` Python3
+import re
+ 
+text = "<font color=#CC0000 bg=#ffffff>"
+
+for m in re.finditer(r"(?P<key>\w+)=(?P<value>#[\da-fA-F]{6})\b", text):
+	print(m.groups())
+
+# ('color', '#CC0000')
+# ('bg', '#ffffff')
+```
+
+**re.findall()**:
+
+``` Python3
+import re
+
+text = "<font color=#CC0000 bg=#ffffff>"
+
+match = re.findall(r"(?P<key>\w+)=(?P<value>#[\da-fA-F]{6})\b", text)
+print(match)  # [('color', '#CC0000'), ('bg', '#ffffff')]
+```
+
+**re.match()**:
+
+``` Python3
+import re
+
+text = "+7(123)456-78-90"
+
+m = re.match(r"\+7\(\d{3}\)\d{3}-\d{2}-\d{2}", text)
+print(m)  # <re.Match object; span=(0, 16), match='+7(123)456-78-90'>
+```
+
+**re.split()**:
+
+``` Python3
+import re
+
+text = """<point lon="40.8482" lat="52.6274" />
+<point lon="40.8559" lat="52.6361" />; <point lon="40.8614" lat="52.651" />
+<point lon="40.8676" lat="52.6585" />, <point lon="40.8672" lat="52.6626" />
+"""
+
+ar = re.split(r"[\n;,]+", text)  # список строк разделённых '\n', ';' или ','
+print(ar)
+
+# ['<point lon="40.8482" lat="52.6274" />', '<point lon="40.8559" lat="52.6361" />', ' <point lon="40.8614" lat="52.651" />', '<point lon="40.8676" lat="52.6585" />', ' <point lon="40.8672" lat="52.6626" />', '']
+```
+
+**re.sub()** со строкой:
+
+``` Python3
+import re
+
+text = """Москва
+Казань
+Тверь
+Самара
+Уфа"""
+
+list = re.sub(r"\s*(\w+)\s*", r"<option>\1</option>\n", text)
+print(list)
+
+# <option>Москва</option>
+# <option>Казань</option>
+# <option>Тверь</option>
+# <option>Самара</option>
+# <option>Уфа</option>
+```
+
+**re.sub()** с функцией:
+
+``` Python3
+import re
+
+text = """Москва
+Казань
+Тверь
+Самара
+Уфа"""
+
+count = 0
+def replFind(m):  # m - объект Match
+	global count
+	count += 1
+	return f"<option value='{count}'>{m.group(1)}</option>\n"
+
+
+list = re.sub(r"\s*(\w+)\s*", replFind, text)
+print(list)
+
+# <option value='1'>Москва</option>
+# <option value='2'>Казань</option>
+# <option value='3'>Тверь</option>
+# <option value='4'>Самара</option>
+# <option value='5'>Уфа</option>
+```
+
+**re.subn()**:
+
+``` Python3
+import re
+
+text = """Москва
+Казань
+Тверь
+Самара
+Уфа"""
+
+list, total = re.subn(r"\s*(\w+)\s*", r"<option>\1</option>\n", text)
+print(list, total)
+
+# <option>Москва</option>
+# <option>Казань</option>
+# <option>Тверь</option>
+# <option>Самара</option>
+# <option>Уфа</option>
+# 5
+```
+
+**re.compile()**:
+
+``` Python3
+import re
+ 
+text = """Москва
+Казань
+Тверь
+Самара
+Уфа"""
+
+count = 0
+def replFind(m):
+    global count
+    count += 1
+    return f"<option value='{count}'>{m.group(1)}</option>\n"
+
+rx = re.compile(r"\s*(\w+)\s*")
+list, total = rx.subn(r"<option>\1</option>\n", text)
+list2 = rx.sub(replFind, text)
+print(list, total, list2, sep="\n")
 ```
